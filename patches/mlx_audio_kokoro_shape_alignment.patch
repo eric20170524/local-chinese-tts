@@ -1,0 +1,19 @@
+--- istftnet.py
++++ istftnet.py
+@@ -616,7 +616,16 @@
+         uv = self._f02uv(f0)
+ 
+         # Generate noise
+         noise_amp = uv * self.noise_std + (1 - uv) * self.sine_amp / 3
++        # MLX linear interpolation can round the upsampled harmonic signal one
++        # frame longer than the UV envelope for some Mandarin phoneme lengths.
++        # Align both paths before broadcasting; the drift is at most one source
++        # frame (300 samples at the model's configured upsampling factor).
++        if sine_waves.shape[1] != noise_amp.shape[1]:
++            common_length = min(sine_waves.shape[1], noise_amp.shape[1])
++            sine_waves = sine_waves[:, :common_length, :]
++            uv = uv[:, :common_length, :]
++            noise_amp = noise_amp[:, :common_length, :]
+         noise = noise_amp * mx.random.normal(sine_waves.shape)
+ 
+         sine_waves = sine_waves * uv + noise

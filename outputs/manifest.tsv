@@ -1,0 +1,14 @@
+编号	性别	风格	显示名	服务语音	语速	音高	语言	时长（秒）	试听文案
+M01	男声	阳光	云希	zh-CN-YunxiNeural	+3%	+0Hz	普通话	2.73	叮咚，您有一条新消息。
+M02	男声	沉稳	云扬	zh-CN-YunyangNeural	-8%	-8Hz	普通话	2.49	叮咚，您有一条新消息。
+M03	男声	热血	云健	zh-CN-YunjianNeural	+6%	-2Hz	普通话	2.97	叮咚，您有一条新消息。
+F01	女声	可爱	晓伊	zh-CN-XiaoyiNeural	+12%	+18Hz	普通话	2.50	叮咚，您有一条新消息。
+F02	女声	活泼	晓伊	zh-CN-XiaoyiNeural	+7%	+7Hz	普通话	2.62	叮咚，您有一条新消息。
+F03	女声	御姐	晓晓	zh-CN-XiaoxiaoNeural	-10%	-24Hz	普通话	2.80	叮咚，您有一条新消息。
+F04	女声	温柔	晓晓	zh-CN-XiaoxiaoNeural	-8%	-4Hz	普通话	2.73	叮咚，您有一条新消息。
+F05	女声	甜美	晓臻	zh-TW-HsiaoChenNeural	+7%	+12Hz	台湾普通话	2.88	叮咚，您有一条新消息。
+F06	女声	元气	晓妮	zh-CN-shaanxi-XiaoniNeural	+10%	+14Hz	陕西口音普通话	2.67	叮咚，您有一条新消息。
+F07	女声	俏皮	晓北	zh-CN-liaoning-XiaobeiNeural	+9%	+10Hz	东北口音普通话	2.88	叮咚，您有一条新消息。
+F08	女声	清新	晓雨	zh-TW-HsiaoYuNeural	+4%	+8Hz	台湾普通话	3.47	叮咚，您有一条新消息。
+F09	女声	港风	晓曼	zh-HK-HiuMaanNeural	-2%	+2Hz	粤语	2.98	叮咚，您有一条新消息。
+F10	女声	知性	晓佳	zh-HK-HiuGaaiNeural	-7%	-6Hz	粤语	3.65	叮咚，您有一条新消息。

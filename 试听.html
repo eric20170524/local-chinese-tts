@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>macOS 中文语音提示包 · 13 种试听</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif; }
+    body { max-width: 980px; margin: 0 auto; padding: 42px 22px 70px; background: #f3f5f8; color: #172033; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.04em; }
+    .lead { margin: 0 0 28px; color: #667085; }
+    h2 { margin: 34px 0 14px; font-size: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 14px; }
+    .card { border: 1px solid #e2e6ec; border-radius: 18px; padding: 18px; background: rgba(255,255,255,.92); box-shadow: 0 8px 25px rgba(17,24,39,.055); }
+    .top { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .code { font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: #fff; background: #5468ff; border-radius: 999px; padding: 6px 8px; }
+    .female .code { background: #ec4899; }
+    .style { font-size: 18px; font-weight: 750; }
+    .meta { color: #667085; font-size: 13px; margin-bottom: 13px; }
+    audio { width: 100%; height: 34px; }
+    footer { color: #7b8497; font-size: 13px; margin-top: 34px; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f131c; color: #edf1f7; }
+      .lead, .meta, footer { color: #99a3b5; }
+      .card { background: #171d28; border-color: #283142; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>中文语音提示包</h1>
+  <p class="lead">统一文案试听：叮咚，您有一条新消息。 · 3 种男声 + 10 种女声</p>
+
+  <h2>男声</h2>
+  <div class="grid">
+    <article class="card"><div class="top"><span class="code">M01</span><span class="style">阳光</span></div><div class="meta">云希 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_M01_男声_阳光_云希.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">M02</span><span class="style">沉稳</span></div><div class="meta">云扬 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_M02_男声_沉稳_云扬.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">M03</span><span class="style">热血</span></div><div class="meta">云健 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_M03_男声_热血_云健.mp3"></audio></article>
+  </div>
+
+  <h2>女声</h2>
+  <div class="grid female">
+    <article class="card"><div class="top"><span class="code">F01</span><span class="style">可爱</span></div><div class="meta">晓伊 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F01_女声_可爱_晓伊.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F02</span><span class="style">活泼</span></div><div class="meta">晓伊 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F02_女声_活泼_晓伊.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F03</span><span class="style">御姐</span></div><div class="meta">晓晓 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F03_女声_御姐_晓晓.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F04</span><span class="style">温柔</span></div><div class="meta">晓晓 · 普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F04_女声_温柔_晓晓.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F05</span><span class="style">甜美</span></div><div class="meta">晓臻 · 台湾普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F05_女声_甜美_晓臻.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F06</span><span class="style">元气</span></div><div class="meta">晓妮 · 陕西口音普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F06_女声_元气_晓妮.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F07</span><span class="style">俏皮</span></div><div class="meta">晓北 · 东北口音普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F07_女声_俏皮_晓北.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F08</span><span class="style">清新</span></div><div class="meta">晓雨 · 台湾普通话</div><audio controls preload="metadata" src="outputs/mp3/CN_F08_女声_清新_晓雨.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F09</span><span class="style">港风</span></div><div class="meta">晓曼 · 粤语</div><audio controls preload="metadata" src="outputs/mp3/CN_F09_女声_港风_晓曼.mp3"></audio></article>
+    <article class="card"><div class="top"><span class="code">F10</span><span class="style">知性</span></div><div class="meta">晓佳 · 粤语</div><audio controls preload="metadata" src="outputs/mp3/CN_F10_女声_知性_晓佳.mp3"></audio></article>
+  </div>
+  <footer>AIFF 成品已针对 macOS 系统提示音转换为 44.1 kHz、单声道、16-bit。</footer>
+</body>
+</html>

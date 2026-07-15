@@ -1,0 +1,17 @@
+# Local environments and macOS metadata
+.venv/
+.install-stage/
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.py[cod]
+
+# Runtime state and generated data
+cache/
+logs/
+local_tts.pid
+local_tts.lock
+settings.json
+models/status.json
+models/huggingface/
+release/

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本机中文 TTS</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow"><span class="status-dot" id="statusDot"></span><span id="statusText">正在连接本机服务</span></div>
+        <h1>让文字拥有<br><span>合适的声音。</span></h1>
+        <p id="voiceSummary">正在读取本地与在线音色。输入任意文字，选择音色后即可朗读、缓存或导出。</p>
+      </div>
+      <div class="hero-badge" aria-label="可用中文音色"><strong id="voiceCount">–</strong><span>可用音色</span></div>
+    </header>
+
+    <section class="composer" aria-labelledby="composerTitle">
+      <div class="section-heading">
+        <div>
+          <span class="step">01</span>
+          <h2 id="composerTitle">输入文字</h2>
+        </div>
+        <span class="count"><span id="charCount">0</span> / 5000</span>
+      </div>
+      <textarea id="textInput" maxlength="5000" autofocus>你好，我是你的本机中文语音助手。请选择一种喜欢的声音。</textarea>
+      <div class="input-hint"><kbd>⌘</kbd><span>+</span><kbd>Enter</kbd><span>快速朗读</span></div>
+    </section>
+
+    <section class="voices" aria-labelledby="voicesTitle">
+      <div class="section-heading">
+        <div>
+          <span class="step">02</span>
+          <h2 id="voicesTitle">选择音色</h2>
+        </div>
+        <div class="filters" role="group" aria-label="筛选音色">
+          <button class="filter active" data-filter="local">本地</button>
+          <button class="filter" data-filter="light">本地轻量</button>
+          <button class="filter" data-filter="quality">本地高质</button>
+          <button class="filter" data-filter="online">在线</button>
+          <button class="filter" data-filter="all">全部</button>
+        </div>
+      </div>
+      <div class="voice-grid" id="voiceGrid" aria-live="polite"></div>
+    </section>
+
+    <section class="player" aria-labelledby="playerTitle">
+      <div class="player-copy">
+        <span class="step light">03</span>
+        <div>
+          <h2 id="playerTitle">生成并朗读</h2>
+          <p id="selectedSummary">正在载入音色…</p>
+        </div>
+      </div>
+      <div class="player-actions">
+        <label class="speed-control">语速
+          <select id="speedSelect">
+            <option value="0.8">0.8×</option>
+            <option value="0.9">0.9×</option>
+            <option value="1" selected>1.0×</option>
+            <option value="1.1">1.1×</option>
+            <option value="1.2">1.2×</option>
+          </select>
+        </label>
+        <button class="primary" id="speakButton"><span class="play-icon">▶</span><span>开始朗读</span></button>
+      </div>
+      <div class="result hidden" id="resultPanel">
+        <audio id="audioPlayer" controls preload="auto"></audio>
+        <a id="downloadLink" class="download" download>下载 MP3</a>
+        <span id="cacheState" class="cache-state"></span>
+      </div>
+      <p class="error hidden" id="errorMessage" role="alert"></p>
+    </section>
+
+    <section class="integration">
+      <div>
+        <span class="step">04</span>
+        <h2>接入其他本机应用</h2>
+        <p>兼容 OpenAI Speech 请求格式。本机地址固定为：</p>
+      </div>
+      <button class="endpoint" id="copyEndpoint" title="复制地址"><code>http://127.0.0.1:8765/v1/audio/speech</code><span>复制</span></button>
+      <p class="privacy">K/Q 系列模型在设备端完成推理，文字不离开电脑；F/M 在线系列仅在首次生成时联网。相同内容都会命中本地缓存。服务只监听 127.0.0.1。</p>
+    </section>
+  </main>
+
+  <template id="voiceTemplate">
+    <button class="voice-card" type="button">
+      <span class="voice-top"><span class="voice-id"></span><span class="check">✓</span></span>
+      <strong class="voice-style"></strong>
+      <span class="voice-name"></span>
+      <span class="voice-description"></span>
+      <span class="voice-locale"></span>
+    </button>
+  </template>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
