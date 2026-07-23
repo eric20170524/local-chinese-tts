@@ -35,6 +35,9 @@ PLAY_COMMANDS = (
 )
 LOCAL_LIGHT_MODEL = "mlx-community/Kokoro-82M-4bit"
 LOCAL_QUALITY_MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit"
+LOCAL_CLONE_MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-6bit"
+CLONED_VOICES_FILE = ROOT / "models" / "cloned_voices.json"
+CLONED_AUDIO_DIR = ROOT / "models" / "cloned_audio"
 
 LOCAL_VOICES: list[dict[str, Any]] = [
     {"id": "K01", "gender": "女声", "style": "轻量温柔", "name": "晓晓", "voice": "zf_xiaoxiao", "rate": "+0%", "pitch": "+0Hz", "locale": "普通话", "description": "默认离线音色，低内存、响应快", "provider": "local-mlx", "tier": "light", "offline": True, "model": LOCAL_LIGHT_MODEL, "lang_code": "z", "instruct": "", "resource": "实测峰值约 1.96GB"},
@@ -85,8 +88,27 @@ for edge_voice in EDGE_VOICES:
         }
     )
 
-VOICES: list[dict[str, Any]] = LOCAL_VOICES + EDGE_VOICES
 
+def load_cloned_voices() -> list[dict[str, Any]]:
+    try:
+        data = json.loads(CLONED_VOICES_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            return data
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        pass
+    return []
+
+
+def save_cloned_voices(voices: list[dict[str, Any]]) -> None:
+    CLONED_VOICES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CLONED_VOICES_FILE.write_text(json.dumps(voices, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def get_all_voices() -> list[dict[str, Any]]:
+    return LOCAL_VOICES + load_cloned_voices() + EDGE_VOICES
+
+
+VOICES: list[dict[str, Any]] = LOCAL_VOICES + EDGE_VOICES
 VOICE_MAP = {voice["id"]: voice for voice in VOICES}
 VOICE_NAME_MAP = {voice["voice"]: voice for voice in VOICES}
 class AsyncFileLock:
@@ -150,7 +172,8 @@ def save_settings(voice_id: str) -> dict[str, str]:
 def resolve_voice(voice_id: str | None) -> dict[str, str]:
     if not voice_id:
         voice_id = load_settings()["voice"]
-    voice = VOICE_MAP.get(voice_id) or VOICE_NAME_MAP.get(voice_id)
+    all_voices = get_all_voices()
+    voice = next((v for v in all_voices if v["id"] == voice_id or v["voice"] == voice_id), None)
     if voice is None:
         raise ValueError(f"未知音色：{voice_id}")
     return voice
@@ -257,6 +280,10 @@ async def synthesize_local(
             ]
             if voice.get("instruct"):
                 command.extend(["--instruct", str(voice["instruct"])])
+            if voice.get("ref_audio"):
+                command.extend(["--ref-audio", str(voice["ref_audio"])])
+            if voice.get("ref_text"):
+                command.extend(["--ref-text", str(voice["ref_text"])])
 
             environment = os.environ.copy()
             environment.update(
@@ -325,6 +352,7 @@ def local_model_status() -> dict[str, Any]:
     return {
         "light": bool(models.get("light", {}).get("ready")),
         "quality": bool(models.get("quality", {}).get("ready")),
+        "clone": bool(models.get("clone", {}).get("ready")),
     }
 
 
@@ -386,7 +414,108 @@ async def health_handler(_: web.Request) -> web.Response:
 
 
 async def voices_handler(_: web.Request) -> web.Response:
-    return json_response({"voices": VOICES, "selected": load_settings()["voice"], "local_models": local_model_status()})
+    return json_response({"voices": get_all_voices(), "selected": load_settings()["voice"], "local_models": local_model_status()})
+
+
+async def upload_clone_voice_handler(request: web.Request) -> web.Response:
+    reader = await request.multipart()
+    name = "专属克隆音色"
+    ref_text = ""
+    audio_bytes = None
+    filename = "reference.wav"
+
+    async for field in reader:
+        if field.name == "name":
+            name = (await field.text()).strip() or name
+        elif field.name == "ref_text":
+            ref_text = (await field.text()).strip()
+        elif field.name in {"file", "audio"}:
+            filename = field.filename or filename
+            audio_bytes = await field.read()
+
+    if not audio_bytes or len(audio_bytes) < 1000:
+        raise ValueError("请上传包含有效声音信息的参考音频文件（支持 wav/mp3/m4a 等）")
+
+    CLONED_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    voice_key = f"{int(time.time())}_{hashlib.md5(audio_bytes).hexdigest()[:6]}"
+    raw_path = CLONED_AUDIO_DIR / f".raw_{voice_key}_{filename}"
+    clean_path = CLONED_AUDIO_DIR / f"ref_{voice_key}.wav"
+    raw_path.write_bytes(audio_bytes)
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(raw_path),
+            "-ar",
+            "24000",
+            "-ac",
+            "1",
+            str(clean_path),
+        )
+        if await proc.wait() != 0 or not clean_path.exists() or clean_path.stat().st_size <= 1000:
+            shutil.copy2(raw_path, clean_path)
+    finally:
+        raw_path.unlink(missing_ok=True)
+
+    voice_id = f"C_{voice_key}"
+    voice_item = {
+        "id": voice_id,
+        "gender": "克隆",
+        "style": "专属复刻",
+        "name": name,
+        "voice": f"clone_{voice_key}",
+        "rate": "+0%",
+        "pitch": "+0Hz",
+        "locale": "普通话（克隆）",
+        "description": f"上传参考音频复刻：{name}",
+        "provider": "local-mlx",
+        "tier": "clone",
+        "offline": True,
+        "model": LOCAL_CLONE_MODEL,
+        "lang_code": "Chinese",
+        "instruct": "",
+        "resource": "基于 Qwen3 Base 1.7B 模型",
+        "ref_audio": str(clean_path),
+        "ref_audio_url": f"/ref_audio/{clean_path.name}",
+        "ref_text": ref_text,
+        "created_at": int(time.time()),
+    }
+
+    cloned = load_cloned_voices()
+    cloned.insert(0, voice_item)
+    save_cloned_voices(cloned)
+
+    return json_response({"ok": True, "voice": voice_item})
+
+
+async def get_cloned_voices_handler(_: web.Request) -> web.Response:
+    return json_response({"voices": load_cloned_voices()})
+
+
+async def delete_cloned_voice_handler(request: web.Request) -> web.Response:
+    voice_id = request.match_info["id"]
+    cloned = load_cloned_voices()
+    new_cloned = []
+    deleted_item = None
+    for v in cloned:
+        if v["id"] == voice_id:
+            deleted_item = v
+            ref_file = Path(v.get("ref_audio", ""))
+            if ref_file.exists():
+                ref_file.unlink(missing_ok=True)
+        else:
+            new_cloned.append(v)
+
+    if not deleted_item:
+        raise ValueError(f"未找到克隆音色：{voice_id}")
+
+    save_cloned_voices(new_cloned)
+    return json_response({"ok": True, "deleted": voice_id})
 
 
 async def model_status_handler(_: web.Request) -> web.Response:
@@ -449,10 +578,13 @@ async def models_handler(_: web.Request) -> web.Response:
 
 
 def create_app() -> web.Application:
-    app = web.Application(middlewares=[error_middleware], client_max_size=1024 * 1024)
+    app = web.Application(middlewares=[error_middleware], client_max_size=20 * 1024 * 1024)
     app.router.add_get("/", index_handler)
     app.router.add_get("/api/health", health_handler)
     app.router.add_get("/api/voices", voices_handler)
+    app.router.add_get("/api/voices/clone", get_cloned_voices_handler)
+    app.router.add_post("/api/voices/clone", upload_clone_voice_handler)
+    app.router.add_delete("/api/voices/clone/{id}", delete_cloned_voice_handler)
     app.router.add_get("/api/models", model_status_handler)
     app.router.add_get("/api/settings", get_settings_handler)
     app.router.add_post("/api/settings", set_settings_handler)
@@ -461,6 +593,7 @@ def create_app() -> web.Application:
     app.router.add_get("/v1/models", models_handler)
     app.router.add_static("/assets/", WEB_DIR, show_index=False)
     app.router.add_static("/audio/", CACHE_DIR, show_index=False)
+    app.router.add_static("/ref_audio/", CLONED_AUDIO_DIR, show_index=False)
     return app
 
 

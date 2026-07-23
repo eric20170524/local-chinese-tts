@@ -37,6 +37,7 @@
         </div>
         <div class="filters" role="group" aria-label="筛选音色">
           <button class="filter active" data-filter="local">本地</button>
+          <button class="filter" data-filter="clone">专属克隆</button>
           <button class="filter" data-filter="light">本地轻量</button>
           <button class="filter" data-filter="quality">本地高质</button>
           <button class="filter" data-filter="online">在线</button>
@@ -44,6 +45,50 @@
         </div>
       </div>
       <div class="voice-grid" id="voiceGrid" aria-live="polite"></div>
+    </section>
+
+    <section class="clone-section" aria-labelledby="cloneTitle">
+      <div class="section-heading">
+        <div>
+          <span class="step special">⚡</span>
+          <h2 id="cloneTitle">制作专属克隆音色</h2>
+        </div>
+        <span class="count" id="cloneModelStatusBadge">Qwen3 Base 1.7B 克隆模型就绪</span>
+      </div>
+
+      <div class="clone-box">
+        <div class="clone-form">
+          <div class="form-group">
+            <label for="cloneName">音色名称</label>
+            <input type="text" id="cloneName" placeholder="例如：我的原声 / 极客男声" maxlength="30">
+          </div>
+          <div class="form-group">
+            <label for="cloneAudio">上传参考音频 <span class="hint">(推荐 3~10 秒清晰单人说话语音，支持 wav/mp3/m4a)</span></label>
+            <div class="drop-zone" id="dropZone">
+              <input type="file" id="cloneAudio" accept="audio/*" class="file-input">
+              <div class="drop-prompt">
+                <span class="upload-icon">🎙️</span>
+                <span id="dropText">点击选择或拖拽音频文件至此处</span>
+                <audio id="cloneAudioPreview" controls class="audio-preview hidden"></audio>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cloneRefText">参考文本 <span class="hint">(填入音频中的确切说话内容，可显著提升相似度)</span></label>
+            <input type="text" id="cloneRefText" placeholder="音频中说的那句话，例如：欢迎体验本地声音克隆功能" maxlength="200">
+          </div>
+          <button class="primary clone-btn" id="createCloneBtn">
+            <span>✨ 保存并生成克隆音色</span>
+          </button>
+        </div>
+
+        <div class="cloned-list-panel">
+          <h3>我的克隆音色库</h3>
+          <div id="clonedVoicesList" class="cloned-voices-list">
+            <div class="empty-clones">暂无自定义音色，上传参考音频即可快速生成</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="player" aria-labelledby="playerTitle">

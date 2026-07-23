@@ -29,6 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True)
     parser.add_argument("--speed", type=float, default=1.0)
     parser.add_argument("--instruct", default="")
+    parser.add_argument("--ref-audio", default="")
+    parser.add_argument("--ref-text", default="")
     return parser
 
 
@@ -64,14 +66,19 @@ def main() -> int:
 
     generate_kwargs = {
         "text": text,
-        "voice": args.voice,
         "speed": args.speed,
         "lang_code": args.lang_code,
         "verbose": False,
         "max_tokens": 2400,
     }
-    if args.instruct:
-        generate_kwargs["instruct"] = args.instruct
+    if args.ref_audio:
+        generate_kwargs["ref_audio"] = args.ref_audio
+        if args.ref_text:
+            generate_kwargs["ref_text"] = args.ref_text
+    else:
+        generate_kwargs["voice"] = args.voice
+        if args.instruct:
+            generate_kwargs["instruct"] = args.instruct
 
     chunk_limit = 240 if "Kokoro" in args.model else 500
     results = []

@@ -12,6 +12,5 @@ logs/
 local_tts.pid
 local_tts.lock
 settings.json
-models/status.json
-models/huggingface/
+models/
 release/
