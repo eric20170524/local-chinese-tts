@@ -16,10 +16,18 @@ ROOT = Path(__file__).resolve().parent
 HF_HOME = ROOT / "models" / "huggingface"
 STATUS_FILE = ROOT / "models" / "status.json"
 
-MODELS = {
-    "light": "mlx-community/Kokoro-82M-4bit",
-    "quality": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit",
-}
+import sys
+
+if sys.platform == "win32":
+    MODELS = {
+        "light": "onnx-community/Kokoro-82M-ONNX",
+        "quality": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit",
+    }
+else:
+    MODELS = {
+        "light": "mlx-community/Kokoro-82M-4bit",
+        "quality": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit",
+    }
 
 KOKORO_VOICE_FILES = [
     "voices/zf_xiaoxiao.safetensors",
@@ -30,9 +38,22 @@ KOKORO_VOICE_FILES = [
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="下载本机 MLX 中文语音模型")
-    parser.add_argument("tiers", nargs="*", choices=sorted(MODELS), default=list(MODELS))
+    parser = argparse.ArgumentParser(description="下载本机中文语音模型")
+    parser.add_argument("tiers", nargs="*", help="可选档位: light (轻量模型), quality (高质量模型)，默认下载全部模型")
     args = parser.parse_args()
+
+    selected_tiers: list[str] = []
+    if not args.tiers:
+        selected_tiers = list(MODELS)
+    else:
+        for item in args.tiers:
+            cleaned = item.strip("[]'\"").replace(",", " ")
+            for part in cleaned.split():
+                if part in MODELS and part not in selected_tiers:
+                    selected_tiers.append(part)
+
+    if not selected_tiers:
+        selected_tiers = list(MODELS)
 
     os.environ["HF_HOME"] = str(HF_HOME)
     os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
@@ -46,7 +67,7 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             pass
 
-    for tier in args.tiers:
+    for tier in selected_tiers:
         repo = MODELS[tier]
         print(f"正在下载 {tier}: {repo}", flush=True)
         path = snapshot_download(repo_id=repo, cache_dir=HF_HOME / "hub")

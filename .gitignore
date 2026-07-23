@@ -15,3 +15,5 @@ settings.json
 models/status.json
 models/huggingface/
 release/
+outputs
+**/.idea

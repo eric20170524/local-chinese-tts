@@ -14,6 +14,11 @@ import subprocess
 import sys
 from typing import Any
 
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
 import edge_tts
 from aiohttp import web
 
@@ -25,7 +30,7 @@ SETTINGS_FILE = ROOT / "settings.json"
 MODEL_STATUS_FILE = ROOT / "models" / "status.json"
 DEFAULT_VOICE = "K01"
 MAX_TEXT_LENGTH = 5000
-FFMPEG = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+FFMPEG = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe") or "/opt/homebrew/bin/ffmpeg"
 PLAY_COMMANDS = (
     ["/usr/bin/afplay"],
     ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet"],
@@ -96,21 +101,30 @@ class AsyncFileLock:
         self.lock_file = None
 
     async def __aenter__(self):
-        import fcntl
-        self.lock_file = open(self.lock_path, "w")
+        self.lock_file = open(self.lock_path, "a+")
         while True:
             try:
-                # Try to acquire exclusive lock non-blockingly
-                fcntl.flock(self.lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                if sys.platform == "win32":
+                    import msvcrt
+                    self.lock_file.seek(0)
+                    msvcrt.locking(self.lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self.lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 return self
-            except (OSError, BlockingIOError):
+            except (OSError, BlockingIOError, PermissionError):
                 await asyncio.sleep(0.2)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.lock_file:
-            import fcntl
             try:
-                fcntl.flock(self.lock_file, fcntl.LOCK_UN)
+                if sys.platform == "win32":
+                    import msvcrt
+                    self.lock_file.seek(0)
+                    msvcrt.locking(self.lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self.lock_file, fcntl.LOCK_UN)
             except Exception:
                 pass
             self.lock_file.close()
@@ -239,9 +253,10 @@ async def synthesize_local(
             wav_file = CACHE_DIR / f".{token}.wav"
             mp3_file = CACHE_DIR / f".{token}.mp3"
             text_file.write_text(text, encoding="utf-8")
+            worker_script = "local_onnx_worker.py" if sys.platform != "darwin" and (ROOT / "local_onnx_worker.py").exists() else "local_mlx_worker.py"
             command = [
                 sys.executable,
-                str(ROOT / "local_mlx_worker.py"),
+                str(ROOT / worker_script),
                 "--model",
                 str(voice["model"]),
                 "--voice",
@@ -261,6 +276,7 @@ async def synthesize_local(
             environment = os.environ.copy()
             environment.update(
                 {
+                    "PYTHONIOENCODING": "utf-8",
                     "HF_HOME": str(ROOT / "models" / "huggingface"),
                     "HF_HUB_DISABLE_TELEMETRY": "1",
                     "HF_HUB_OFFLINE": "1",
@@ -277,8 +293,15 @@ async def synthesize_local(
                 )
                 stdout, stderr = await process.communicate()
                 if process.returncode != 0 or not wav_file.exists() or wav_file.stat().st_size <= 1000:
-                    details = stderr.decode("utf-8", errors="replace")[-1600:]
-                    raise RuntimeError(f"本地模型合成失败：{details.strip() or '没有生成音频'}")
+                    try:
+                        details = stderr.decode("utf-8").strip()
+                    except UnicodeDecodeError:
+                        details = stderr.decode("gbk", errors="replace").strip()
+                    if not details:
+                        details = "没有生成音频"
+                    else:
+                        details = details[-1600:]
+                    raise RuntimeError(f"本地模型合成失败：{details}")
 
                 converter = await asyncio.create_subprocess_exec(
                     FFMPEG,
@@ -471,14 +494,17 @@ async def speak_command(args: argparse.Namespace) -> int:
         pbpaste = shutil.which("pbpaste")
         xclip = shutil.which("xclip")
         wl_paste = shutil.which("wl-paste")
-        if pbpaste:
+        powershell = shutil.which("powershell") or shutil.which("powershell.exe")
+        if sys.platform == "win32" and powershell:
+            text = subprocess.run([powershell, "-NoProfile", "-Command", "Get-Clipboard"], check=True, capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        elif pbpaste:
             text = subprocess.run([pbpaste], check=True, capture_output=True, text=True).stdout
         elif wl_paste:
             text = subprocess.run([wl_paste], check=True, capture_output=True, text=True).stdout
         elif xclip:
             text = subprocess.run([xclip, "-selection", "clipboard", "-o"], check=True, capture_output=True, text=True).stdout
         else:
-            raise RuntimeError("未找到剪贴板工具：macOS 需要 pbpaste，Linux 可安装 wl-clipboard 或 xclip")
+            raise RuntimeError("未找到剪贴板工具：Windows 需要 PowerShell，macOS 需要 pbpaste，Linux 可安装 wl-clipboard 或 xclip")
     elif args.stdin or not sys.stdin.isatty():
         text = sys.stdin.read()
     else:
@@ -498,13 +524,21 @@ async def speak_command(args: argparse.Namespace) -> int:
         print(audio)
 
     if args.play:
+        played = False
         for command in PLAY_COMMANDS:
             executable = command[0]
             if Path(executable).exists() or shutil.which(executable):
                 subprocess.run([*command, str(audio)], check=True)
+                played = True
                 break
-        else:
-            raise RuntimeError("未找到音频播放工具：macOS 需要 afplay，Linux 可安装 ffplay、mpg123、mpv 或 aplay")
+        if not played and sys.platform == "win32":
+            try:
+                os.startfile(str(audio))
+                played = True
+            except Exception:
+                pass
+        if not played:
+            raise RuntimeError("未找到音频播放工具：Windows 可用默认播放器/ffplay，macOS 需要 afplay，Linux 可安装 ffplay、mpg123、mpv 或 aplay")
     print(f"voice={voice['id']} cached={str(cached).lower()}", file=sys.stderr)
     return 0
 
@@ -540,6 +574,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     args = build_parser().parse_args()
     if args.command == "serve":
         CACHE_DIR.mkdir(parents=True, exist_ok=True)

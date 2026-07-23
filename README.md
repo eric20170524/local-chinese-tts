@@ -9,12 +9,12 @@
 | 平台 | 支持状态 | 说明 |
 |---|---|---|
 | macOS Apple Silicon | 完整支持 | 支持离线 MLX 音色、在线备用音色、网页/API/CLI、LaunchAgent、Automator 服务和系统提示音安装。 |
-| Linux | 部分支持 | Python 服务、网页/API/CLI 可作为在线音色或手动适配后的服务使用；macOS 系统声音、LaunchAgent、Automator 服务不可用。当前离线模型使用 MLX，主要面向 Apple Silicon。 |
-| Windows | 暂不支持 | 当前项目依赖 bash 脚本、POSIX 文件锁与 macOS/Linux 风格路径；还没有 PowerShell 安装器或 Windows 文件锁实现。 |
+| Windows | 完整支持 | 支持网页/API/CLI、Windows Batch / PowerShell 自动化脚本、双击隐蔽启动（`打开本机TTS.vbs`）、跨进程文件锁 `msvcrt`、Edge-TTS 在线音色与 ONNX 离线模型。 |
+| Linux | 部分支持 | Python 服务、网页/API/CLI 可作为在线音色或手动适配后的服务使用；macOS 系统声音、LaunchAgent、Automator 服务不可用。 |
 
-因此，仓库名称使用 `local-chinese-tts` 更准确：核心服务不是只能在 macOS 上运行，但完整离线和系统集成体验仍以 macOS Apple Silicon 为主。
+因此，核心服务在 macOS、Windows、Linux 上均可运行，并在 Windows 上提供完整的 PowerShell / Batch 自动化管理工具与静默启动能力。
 
-> 仓库不包含本机模型、虚拟环境、缓存、日志和个人设置。安装依赖后可运行 `python3 download_local_models.py` 下载离线模型；轻量与高质量模型合计约 3.1GB。
+> 仓库不包含本机模型、虚拟环境、缓存、日志和个人设置。安装依赖后可运行 `python download_local_models.py` 下载离线模型；轻量与高质量模型合计约 3.1GB。
 
 ## 本机动态 TTS
 
@@ -23,7 +23,7 @@
 - 控制面板：[http://127.0.0.1:8765/](http://127.0.0.1:8765/)
 - OpenAI Speech 兼容接口：`http://127.0.0.1:8765/v1/audio/speech`
 - 当前默认音色会在网页中保存；在 macOS 上也会同步用于“中文音色朗读”快速操作。
-- 默认音色是 `K01 本地轻量温柔`，在 macOS Apple Silicon 上可完全离线合成。
+- 默认音色是 `K01 本地轻量温柔`。
 - K/Q 本地系列被强制设置为离线模式，不会静默访问 Hugging Face 或其他云端服务。
 - F/M 在线系列首次合成需要联网；全部结果都会保存在 `cache/`。
 
@@ -39,6 +39,28 @@
 高质量模型由独立进程按需加载，完成后进程退出并释放内存；常驻的本机 API 服务实测约 40MB，不会长期占用模型内存。
 
 ## 安装与启动
+
+### Windows 使用（win 分支）
+
+#### 双击快捷启动
+双击根目录下的 `打开本机TTS.vbs` 或 `打开本机TTS.bat` 即可静默启动服务并自动打开浏览器控制面板。
+
+#### Windows 命令行
+
+```cmd
+# 自动创建虚拟环境并安装依赖
+install_local_tts.bat
+
+# 启动 HTTP API 服务与控制面板
+start_local_tts.bat
+
+# 停止服务
+stop_local_tts.bat
+
+# 命令行朗读测试
+tts.bat list
+tts.bat speak --voice F04 --text "你好，这是 Windows 本机 TTS 测试。" --play
+```
 
 ### macOS 完整安装
 
