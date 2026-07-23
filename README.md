@@ -14,6 +14,21 @@
 
 因此，仓库名称使用 `local-chinese-tts` 更准确：核心服务不是只能在 macOS 上运行，但完整离线和系统集成体验仍以 macOS Apple Silicon 为主。
 
+## 产品展示
+
+启动 `./start_local_tts.sh` 后访问 [http://127.0.0.1:8765/](http://127.0.0.1:8765/)，即可在本机控制面板中完成文字输入、音色选择、语速调整和朗读生成。以下是实际界面截图：
+
+<p align="center">
+  <img src="docs/screenshots/control-panel.jpg" alt="本机中文 TTS 控制面板首页" width="820">
+</p>
+<p align="center"><sub>输入文字并快速开始朗读；顶部状态会显示本机模型是否就绪。</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/voice-selection.jpg" alt="本机中文 TTS 音色选择界面" width="48%">
+  <img src="docs/screenshots/generate-and-api.jpg" alt="本机中文 TTS 生成与 OpenAI Speech API 界面" width="48%">
+</p>
+<p align="center"><sub>按本地轻量、本地高质或在线筛选音色，并在生成区调整语速、复制 API 地址。</sub></p>
+
 > 仓库不包含本机模型、虚拟环境、缓存、日志和个人设置。安装依赖后可运行 `python3 download_local_models.py` 下载离线模型；轻量与高质量模型合计约 3.1GB。
 
 ## 本机动态 TTS

@@ -14,6 +14,21 @@ Local Chinese TTS is a self-hosted Chinese text-to-speech service with a web con
 
 The core service is not macOS-only, but the complete offline and system-integration experience targets macOS on Apple Silicon.
 
+## Product showcase
+
+Run `./start_local_tts.sh` and open [http://127.0.0.1:8765/](http://127.0.0.1:8765/) to use the local control panel for text input, voice selection, speed control, and speech generation. The screenshots below show the actual interface:
+
+<p align="center">
+  <img src="docs/screenshots/control-panel.jpg" alt="Local Chinese TTS control panel" width="820">
+</p>
+<p align="center"><sub>Enter text and start speaking quickly; the status indicator shows whether the local models are ready.</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/voice-selection.jpg" alt="Local Chinese TTS voice selection" width="48%">
+  <img src="docs/screenshots/generate-and-api.jpg" alt="Local Chinese TTS generation and OpenAI Speech API" width="48%">
+</p>
+<p align="center"><sub>Filter lightweight local, high-quality local, or online voices, then adjust speed and copy the API endpoint.</sub></p>
+
 ## Highlights
 
 - A local HTTP service bound to `127.0.0.1:8765` by default.
