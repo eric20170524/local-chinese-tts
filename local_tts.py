@@ -12,6 +12,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 from typing import Any
 
 import edge_tts
@@ -218,6 +219,19 @@ def cache_path(text: str, voice: dict[str, str], speed: float, extension: str = 
     return CACHE_DIR / f"{voice['id']}_{digest}.{extension}"
 
 
+def resolve_local_model_path(model: str) -> str:
+    """Prefer the verified local snapshot recorded by the model downloader."""
+    try:
+        status = json.loads(MODEL_STATUS_FILE.read_text(encoding="utf-8"))
+        for item in status.get("models", {}).values():
+            path = Path(str(item.get("path", "")))
+            if item.get("repo") == model and item.get("ready") and (path / "config.json").is_file():
+                return str(path)
+    except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError):
+        pass
+    return model
+
+
 async def synthesize(text: str, voice: dict[str, str], speed: float = 1.0) -> tuple[Path, bool]:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     target = cache_path(text, voice, speed)
@@ -266,7 +280,7 @@ async def synthesize_local(
                 sys.executable,
                 str(ROOT / "local_mlx_worker.py"),
                 "--model",
-                str(voice["model"]),
+                resolve_local_model_path(str(voice["model"])),
                 "--voice",
                 str(voice["voice"]),
                 "--lang-code",
