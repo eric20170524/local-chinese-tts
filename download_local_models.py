@@ -56,10 +56,10 @@ def main() -> int:
         selected_tiers = list(MODELS)
 
     os.environ["HF_HOME"] = str(HF_HOME)
-    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"  # set HF_ENDPOINT=https://hf-mirror.com
     HF_HOME.mkdir(parents=True, exist_ok=True)
     STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-
+ 
     status = {"models": {}, "updated_at": int(time.time())}
     if STATUS_FILE.exists():
         try:
