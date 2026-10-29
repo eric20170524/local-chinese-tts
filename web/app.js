@@ -1,7 +1,7 @@
 const state = {
   voices: [],
-  selected: "K01",
-  filter: "local",
+  selected: "QF1",
+  filter: "quality",
   localModels: {},
 };
 
@@ -157,7 +157,7 @@ async function initialize() {
     if (!response.ok) throw new Error("服务不可用");
     const data = await response.json();
     state.voices = data.voices;
-    state.selected = data.selected || "K01";
+    state.selected = data.selected || "QF1";
     state.localModels = data.local_models || {};
     elements.voiceCount.textContent = String(state.voices.length);
     const localCount = state.voices.filter((voice) => voice.offline).length;

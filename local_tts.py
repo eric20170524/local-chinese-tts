@@ -28,7 +28,7 @@ WEB_DIR = ROOT / "web"
 CACHE_DIR = ROOT / "cache"
 SETTINGS_FILE = ROOT / "settings.json"
 MODEL_STATUS_FILE = ROOT / "models" / "status.json"
-DEFAULT_VOICE = "K01"
+DEFAULT_VOICE = "QF1"
 MAX_TEXT_LENGTH = 5000
 FFMPEG = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe") or "/opt/homebrew/bin/ffmpeg"
 PLAY_COMMANDS = (
@@ -94,6 +94,30 @@ VOICES: list[dict[str, Any]] = LOCAL_VOICES + EDGE_VOICES
 
 VOICE_MAP = {voice["id"]: voice for voice in VOICES}
 VOICE_NAME_MAP = {voice["voice"]: voice for voice in VOICES}
+
+FALLBACK_ONLINE_VOICES: dict[str, str] = {
+    # 10 种高质量女声 -> 对应风格在线神经女声
+    "QF1": "F04",  # Serena 温柔 -> 晓晓 温柔
+    "QF2": "F02",  # Vivian 明亮 -> 晓伊 活泼
+    "QF3": "F05",  # Vivian 甜美 -> 晓臻 甜美
+    "QF4": "F01",  # Ono_Anna 可爱 -> 晓伊 可爱
+    "QF5": "F04",  # Serena 纯真 -> 晓晓 温柔
+    "QF6": "F06",  # Vivian 元气 -> 晓妮 元气
+    "QF7": "F07",  # Ono_Anna 俏皮 -> 晓北 俏皮
+    "QF8": "F01",  # Sohee 软萌 -> 晓伊 可爱
+    "QF9": "F08",  # Serena 清甜 -> 晓雨 清新
+    "QF10": "F03", # Sohee 情感 -> 晓晓 御姐
+    # 3 种高质量男声 -> 对应风格在线神经男声
+    "QM1": "M02",  # Uncle Fu 成熟 -> 云扬 沉稳
+    "QM2": "M01",  # Dylan 京腔 -> 云希 阳光
+    "QM3": "M03",  # Eric 川味 -> 云健 热血
+    # 轻量离线音色备用
+    "K01": "F04",
+    "K02": "F02",
+    "K03": "M01",
+    "K04": "M02",
+}
+
 class AsyncFileLock:
     """A cross-process file lock that plays nice with asyncio without blocking the event loop."""
     def __init__(self, lock_path: Path):
@@ -209,15 +233,12 @@ def cache_path(text: str, voice: dict[str, str], speed: float, extension: str = 
     return CACHE_DIR / f"{voice['id']}_{digest}.{extension}"
 
 
-async def synthesize(text: str, voice: dict[str, str], speed: float = 1.0) -> tuple[Path, bool]:
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    target = cache_path(text, voice, speed)
-    if target.exists() and target.stat().st_size > 1000:
-        return target, True
-
-    if voice.get("provider") == "local-mlx":
-        return await synthesize_local(text, voice, speed, target)
-
+async def synthesize_online(
+    text: str,
+    voice: dict[str, Any],
+    speed: float,
+    target: Path,
+) -> tuple[Path, bool]:
     rate = adjusted_rate(voice["rate"], speed)
     temporary = target.with_name(f".{target.stem}.{os.getpid()}.tmp.mp3")
     try:
@@ -235,6 +256,31 @@ async def synthesize(text: str, voice: dict[str, str], speed: float = 1.0) -> tu
     finally:
         temporary.unlink(missing_ok=True)
     return target, False
+
+
+async def synthesize(text: str, voice: dict[str, Any], speed: float = 1.0) -> tuple[Path, bool]:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    target = cache_path(text, voice, speed)
+    if target.exists() and target.stat().st_size > 1000:
+        return target, True
+
+    # 优先尝试本地合成
+    if voice.get("provider") == "local-mlx":
+        try:
+            return await synthesize_local(text, voice, speed, target)
+        except Exception as error:
+            # 策略：优先高质量音色，其次是在线 TTS 自动平滑降级兜底
+            fallback_id = FALLBACK_ONLINE_VOICES.get(voice["id"])
+            if fallback_id and fallback_id in VOICE_MAP:
+                fallback_voice = VOICE_MAP[fallback_id]
+                print(
+                    f"提示：音色 [{voice['id']}] 本地合成未就绪（{error}），按策略优先平滑降级至在线音色 [{fallback_id}] {fallback_voice['name']}（{fallback_voice['style']}）",
+                    file=sys.stderr,
+                )
+                return await synthesize_online(text, fallback_voice, speed, target)
+            raise
+
+    return await synthesize_online(text, voice, speed, target)
 
 
 async def synthesize_local(

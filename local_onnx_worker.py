@@ -81,7 +81,7 @@ def main() -> int:
     try:
         from kokoro_onnx import Kokoro
         kokoro = Kokoro(str(onnx_model_path), str(voices_bin_path) if voices_bin_path.exists() else str(onnx_model_path.parent / "voices-v1.0.bin"))
-        samples, sample_rate = kokoro.create(text, voice=args.voice, speed=args.speed, lang="zh")
+        samples, sample_rate = kokoro.create(text, voice=args.voice, speed=args.speed, lang="cmn")
     except Exception:
         import onnxruntime as ort
         session = ort.InferenceSession(str(onnx_model_path), providers=["CPUExecutionProvider"])
